@@ -50,7 +50,7 @@ export function validateOAuthToken(token: string): boolean {
   return token.startsWith('oauth_') && token.length > 10
 }
 
-export function exchangeCodeForTokens(code: string, clientId: string): string {
+export function exchangeCodeForToken(code: string, clientId: string): string {
   if (!code || !clientId) throw new Error('Missing OAuth parameters')
   return `token_${code}_${clientId}`
 }
