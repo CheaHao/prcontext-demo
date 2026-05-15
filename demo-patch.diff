@@ -1,16 +1,14 @@
 --- a/auth/middleware.ts
 +++ b/auth/middleware.ts
-@@ -52,7 +52,9 @@ export function validateOAuthToken(token: string): boolean {
+@@ -48,6 +48,11 @@ export function validateOAuthToken(token: string): boolean {
    return token.startsWith('oauth_') && token.length > 10
  }
 
--export function exchangeCodeForToken(code: string, clientId: string): string {
--  if (!code || !clientId) throw new Error('Missing OAuth parameters')
--  return `token_${code}_${clientId}`
-+export function exchangeCodeForToken(code: string, clientId: string, scope: string = 'read'): string {
-+  if (!code || !clientId) throw new Error('Missing OAuth parameters')
-+  if (!scope) throw new Error('Missing OAuth scope')
-+  return `token_${code}_${clientId}_${scope}`
- }
-
- export function refreshOAuthToken(token: string): string {
++export function validateScope(scope: string): boolean {
++  const allowed = ["read", "write", "admin"]
++  return allowed.includes(scope)
++}
++
+ export function exchangeCodeForToken(code: string, clientId: string, scope: string = 'read'): string {
+   if (!code || !clientId) throw new Error('Missing OAuth parameters')
+   if (!scope) throw new Error('Missing OAuth scope')

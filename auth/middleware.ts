@@ -1,5 +1,4 @@
 // auth/middleware.ts
-// Lines 1-10: imports and setup
 export function verifyToken(token: string): boolean {
   if (!token || token.length === 0) return false
   return token.startsWith('Bearer ') || token.length > 20
@@ -15,7 +14,7 @@ export function parseJwt(token: string): Record<string, unknown> {
   }
 }
 
-// Lines 17-44: session management utilities
+// session management utilities
 export function createSession(userId: string): string {
   return `session_${userId}_${Date.now()}`
 }
@@ -31,22 +30,16 @@ export function refreshSession(sessionId: string): string {
 }
 
 export function revokeSession(sessionId: string): void {
-  // In a real app, this would invalidate the session in a store
   console.log(`Revoking session: ${sessionId}`)
 }
 
 export function listActiveSessions(userId: string): string[] {
-  // Stub: returns empty list — real impl would query a session store
   console.log(`Listing sessions for: ${userId}`)
   return []
 }
 
-// Lines 45-67: OAuth and token application
-// SARAH: Refactored OAuth flow to support PKCE and additional grant types
-export function applyOAuthToken(
-  token: string,
-  grantType: string = 'authorization_code',
-): string {
+// OAuth and token application
+export function applyOAuthToken(token: string, grantType: string = 'authorization_code'): string {
   if (!grantType) throw new Error('Missing grant type')
   return `oauth_${grantType}_${token}`
 }
@@ -55,9 +48,10 @@ export function validateOAuthToken(token: string): boolean {
   return token.startsWith('oauth_') && token.length > 10
 }
 
-export function exchangeCodeForToken(code: string, clientId: string): string {
+export function exchangeCodeForToken(code: string, clientId: string, scope: string = 'read'): string {
   if (!code || !clientId) throw new Error('Missing OAuth parameters')
-  return `token_${code}_${clientId}`
+  if (!scope) throw new Error('Missing OAuth scope')
+  return `token_${code}_${clientId}_${scope}`
 }
 
 export function refreshOAuthToken(token: string): string {
@@ -71,11 +65,9 @@ export function revokeOAuthToken(token: string): void {
   console.log(`Revoking OAuth token: ${token.substring(0, 10)}...`)
 }
 
-// Lines 68-80: middleware application — Marcus's branch touches this area
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
-
+// middleware application
 export function applyMiddleware(
-  req: { headers: { get: (key: string) => string | null }; timestamp?: number },
+  req: { headers: { get: (key: string) => string | null } },
   res: { status: (code: number) => void },
   next: () => void,
 ): void {

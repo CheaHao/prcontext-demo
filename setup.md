@@ -4,14 +4,21 @@ This guide sets up the `prcontext-demo` GitHub repository with the exact branch 
 
 ## Overview
 
-The demo shows PRContext detecting conflict risk across two open PRs that both touch `auth/middleware.ts`:
+The demo shows two PRContext features simultaneously:
+
+**Live Branch Conflicts** — your uncommitted edits vs open PRs:
 
 | Branch | Author | Region touched | Risk |
 |---|---|---|---|
-| `feature/oauth` | Sarah | Lines 45–67 (OAuth functions) | High |
 | `fix/session-timeout` | Marcus | Lines 68–80 (middleware application) | Medium |
 
-A live edit patch (applied during the demo) modifies lines 52–54 inside Sarah's range, triggering the HIGH-risk warning in the sidebar.
+**Rebase Preview** — your committed branch vs what landed on main:
+
+| Merged branch | Author | Region touched | Risk |
+|---|---|---|---|
+| `feature/oauth` | Sarah | Lines 45–67 (OAuth functions) | High |
+
+Sarah's PR is merged to `main` during setup. Your local `feature/add-scope` branch has a committed change in the same OAuth region — so Rebase Preview immediately warns you that rebasing will conflict with her work.
 
 ---
 
@@ -94,6 +101,21 @@ Open a pull request on GitHub: base `main` ← compare `feature/oauth`.
 
 ---
 
+## Step 3.5: Merge Sarah's PR into main
+
+On GitHub, merge the `feature/oauth` pull request into `main`. This simulates Sarah's work landing while you were mid-feature.
+
+Pull the updated main locally:
+
+```bash
+git checkout main
+git pull
+```
+
+Sarah's branch is now closed. Her OAuth changes are on `main`. This is what the **Rebase Preview** section will detect.
+
+---
+
 ## Step 4: Create Marcus's branch — `fix/session-timeout`
 
 This branch modifies lines 68–80 (the middleware application section). It is based on `main`, not Sarah's branch.
@@ -141,19 +163,58 @@ git commit -m "fix(session): add 30-minute session timeout enforcement in middle
 git push -u origin fix/session-timeout
 ```
 
-Open a pull request on GitHub: base `main` ← compare `fix/session-timeout`.
+Open a pull request on GitHub: base `main` ← compare `fix/session-timeout`. **Leave this PR open.**
 
 ---
 
-## Step 5: Apply the live edit patch during the demo
+## Step 5: Create your local working branch — `feature/add-scope`
 
-During the demo, simulate a developer making a live edit that overlaps Sarah's PR region by applying the patch from the `demo-repo/` directory (using VS Code's integrated terminal):
+This is the branch you will be on during the demo. It was created from `main` before Sarah's merge, so it is behind main — exactly the scenario Rebase Preview warns you about.
+
+```bash
+git checkout main
+git checkout -b feature/add-scope
+```
+
+Add a `scope` parameter to `exchangeCodeForToken` inside `auth/middleware.ts` (lines 58–61):
+
+**Before:**
+```typescript
+export function exchangeCodeForToken(code: string, clientId: string): string {
+  if (!code || !clientId) throw new Error('Missing OAuth parameters')
+  return `token_${code}_${clientId}`
+}
+```
+
+**After:**
+```typescript
+export function exchangeCodeForToken(code: string, clientId: string, scope: string = 'read'): string {
+  if (!code || !clientId) throw new Error('Missing OAuth parameters')
+  if (!scope) throw new Error('Missing OAuth scope')
+  return `token_${code}_${clientId}_${scope}`
+}
+```
+
+Commit this change (do not push — leave the branch local to simulate an unpushed feature branch):
+
+```bash
+git add auth/middleware.ts
+git commit -m "feat: add scope parameter to exchangeCodeForToken"
+```
+
+This committed change overlaps Sarah's OAuth region (lines 45–67). When PRContext checks the Rebase Preview, it will see that `main` now has Sarah's refactored OAuth functions and flag `auth/middleware.ts` as **HIGH** conflict risk for a rebase.
+
+---
+
+## Step 6: Apply the live edit patch during the demo
+
+During the demo, simulate an additional uncommitted edit that overlaps Marcus's region. From inside `demo-repo/` in the integrated terminal:
 
 ```bash
 git apply demo-patch.diff
 ```
 
-Or apply it manually — edit `auth/middleware.ts` around line 53:
+Or apply manually — edit `auth/middleware.ts` around line 53:
 
 **Before:**
 ```typescript
@@ -170,18 +231,27 @@ export function exchangeCodeForToken(code: string, clientId: string, scope: stri
   return `token_${code}_${clientId}_${scope}`
 ```
 
-This edit falls inside Sarah's modified region (lines 45–67), so PRContext immediately updates the sidebar to show **HIGH** conflict risk with `feature/oauth`.
+Save the file. PRContext updates the **Live Branch Conflicts** section:
+- `fix/session-timeout` (Marcus) → **SAME FILE** (medium)
+
+The **Rebase Preview** section is already showing the high-risk conflict with Sarah's merged changes — no action needed.
+
+To reset after the demo:
+
+```bash
+git checkout auth/middleware.ts
+```
 
 ---
 
 ## Demo Script Summary
 
-1. Open VS Code in the `demo-repo/` workspace (Extension Development Host).
-2. Show the PRContext sidebar — both open PRs appear with initial risk scores.
-3. Open `auth/middleware.ts`.
-4. Apply the live edit patch (`git apply demo-patch.diff` in the integrated terminal).
-5. PRContext sidebar updates in real time: `feature/oauth` → **HIGH**, `fix/session-timeout` → **MEDIUM**.
-6. Click the HIGH-risk PR row to see the diff and conflict explanation.
+1. Open VS Code in the `demo-repo/` workspace on the `feature/add-scope` branch (Extension Development Host).
+2. Show the PRContext sidebar — **Rebase Preview** already shows Sarah's merged `feature/oauth` as HIGH risk.
+3. Explain: "I haven't rebased yet. Sarah's PR merged while I was working — PRContext already knows I'll have a conflict."
+4. Open `auth/middleware.ts`.
+5. Apply the live edit patch to show **Live Branch Conflicts** — Marcus's open PR appears as SAME FILE.
+6. Click the HIGH-risk file in **Rebase Preview** to open the diff: your `feature/add-scope` changes on the left, Sarah's merged version on the right.
 
 To reset after the demo:
 
