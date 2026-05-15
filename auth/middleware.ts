@@ -43,6 +43,7 @@ export function listActiveSessions(userId: string): string[] {
 
 // Lines 45-67: OAuth and token application
 // SARAH: Refactored OAuth flow to support PKCE and additional grant types
+// feature/oauth-enhancements branch adds support for client credentials and refresh tokens
 export function applyOAuthToken(
   token: string,
   grantType: string = 'authorization_code',
