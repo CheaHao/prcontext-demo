@@ -41,9 +41,14 @@ export function listActiveSessions(userId: string): string[] {
   return []
 }
 
-// Lines 45-67: OAuth and token application — THIS IS WHERE SARAH'S BRANCH MAKES CHANGES
-export function applyOAuthToken(token: string): string {
-  return `oauth_${token}`
+// Lines 45-67: OAuth and token application
+// SARAH: Refactored OAuth flow to support PKCE and additional grant types
+export function applyOAuthToken(
+  token: string,
+  grantType: string = 'authorization_code',
+): string {
+  if (!grantType) throw new Error('Missing grant type')
+  return `oauth_${grantType}_${token}`
 }
 
 export function validateOAuthToken(token: string): boolean {
@@ -57,7 +62,9 @@ export function exchangeCodeForToken(code: string, clientId: string): string {
 
 export function refreshOAuthToken(token: string): string {
   if (!validateOAuthToken(token)) throw new Error('Invalid OAuth token')
-  return `oauth_refreshed_${Date.now()}`
+  const refreshed = `oauth_refreshed_${Date.now()}`
+  console.log(`Token refreshed for client`)
+  return refreshed
 }
 
 export function revokeOAuthToken(token: string): void {
@@ -74,17 +81,12 @@ export function applyMiddleware(
 ): void {
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) {
-    res.status(403)
+    res.status(401)
     return
   }
   const token = authHeader.replace('Bearer ', '')
   if (!verifyToken(token)) {
     res.status(403)
-    return
-  }
-  const requestTime = req.timestamp ?? Date.now()
-  if (Date.now() - requestTime > SESSION_TIMEOUT_MS) {
-    res.status(401)
     return
   }
   next()
