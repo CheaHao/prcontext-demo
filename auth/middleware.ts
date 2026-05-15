@@ -73,8 +73,10 @@ export function revokeOAuthToken(token: string): void {
 }
 
 // Lines 68-80: middleware application — Marcus's branch touches this area
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
+
 export function applyMiddleware(
-  req: { headers: { get: (key: string) => string | null } },
+  req: { headers: { get: (key: string) => string | null }; timestamp?: number },
   res: { status: (code: number) => void },
   next: () => void,
 ): void {
