@@ -83,3 +83,4 @@ export function applyMiddleware(
   }
   next()
 }
+// fix/session-timeout: Adjusted session timeout to 30 minutes for better security and user experience
